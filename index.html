@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ventilator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+      color: #e0e0e0;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 2rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #7ecfff;
+      text-shadow: 0 0 20px #7ecfff88;
+    }
+
+    .scene {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* Wind particles */
+    .wind-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .wind-particle {
+      position: absolute;
+      background: rgba(126, 207, 255, 0.25);
+      border-radius: 50%;
+      animation: windFlow linear infinite;
+      opacity: 0;
+    }
+
+    @keyframes windFlow {
+      0%   { transform: translateX(-80px) translateY(0px); opacity: 0; }
+      10%  { opacity: 0.6; }
+      90%  { opacity: 0.4; }
+      100% { transform: translateX(110vw) translateY(var(--drift)); opacity: 0; }
+    }
+
+    /* Fan housing */
+    .fan-wrapper {
+      position: relative;
+      width: 260px;
+      height: 260px;
+    }
+
+    /* Glow ring */
+    .glow-ring {
+      position: absolute;
+      inset: -10px;
+      border-radius: 50%;
+      background: transparent;
+      box-shadow: 0 0 0px #7ecfff00;
+      transition: box-shadow 1s ease;
+      pointer-events: none;
+    }
+    .glow-ring.on {
+      box-shadow: 0 0 40px #7ecfff55, 0 0 80px #7ecfff22;
+    }
+
+    /* Outer cage circle */
+    .fan-cage {
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      border: 6px solid #3a5a7a;
+      background: radial-gradient(circle at 40% 35%, #1e3a50, #0d1e2c);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 8px 32px #00000088, inset 0 2px 8px #ffffff11;
+    }
+
+    /* Cage grid lines */
+    .fan-cage::before {
+      content: '';
+      position: absolute;
+      inset: 10px;
+      border-radius: 50%;
+      border: 2px solid #2a4a6a44;
+      box-shadow:
+        0 0 0 18px #2a4a6a22,
+        0 0 0 36px #2a4a6a11;
+    }
+
+    /* Fan blades assembly */
+    .fan-rotor {
+      width: 200px;
+      height: 200px;
+      position: relative;
+      animation: none;
+    }
+
+    .fan-rotor.spinning-slow { animation: spin 2s linear infinite; }
+    .fan-rotor.spinning-med  { animation: spin 0.8s linear infinite; }
+    .fan-rotor.spinning-fast { animation: spin 0.3s linear infinite; }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* Individual blades */
+    .blade {
+      position: absolute;
+      width: 80px;
+      height: 36px;
+      top: 50%;
+      left: 50%;
+      transform-origin: 0% 50%;
+      border-radius: 50% 80% 50% 10% / 40% 40% 40% 40%;
+      background: linear-gradient(135deg, #4a9eca, #2c6e9e, #1a4f73);
+      box-shadow: 2px 2px 8px #00000066, inset 0 1px 3px #ffffff22;
+      margin-top: -18px;
+      margin-left: 0;
+      opacity: 0.92;
+    }
+    .blade:nth-child(1) { transform: rotate(0deg)   translateX(2px); }
+    .blade:nth-child(2) { transform: rotate(72deg)  translateX(2px); }
+    .blade:nth-child(3) { transform: rotate(144deg) translateX(2px); }
+    .blade:nth-child(4) { transform: rotate(216deg) translateX(2px); }
+    .blade:nth-child(5) { transform: rotate(288deg) translateX(2px); }
+
+    /* Center hub */
+    .hub {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #7ecfff, #2c6e9e, #0d1e2c);
+      box-shadow: 0 2px 10px #00000088, 0 0 12px #7ecfff44;
+      z-index: 10;
+    }
+    .hub::after {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 40%, #ffffff44, transparent);
+    }
+
+    /* Stand pole */
+    .fan-pole {
+      width: 14px;
+      height: 80px;
+      background: linear-gradient(90deg, #2a4a6a, #4a7a9e, #2a4a6a);
+      border-radius: 4px;
+      margin-top: -4px;
+      box-shadow: 2px 4px 12px #00000066;
+    }
+
+    /* Stand base */
+    .fan-base {
+      width: 160px;
+      height: 22px;
+      background: linear-gradient(180deg, #3a5a7a, #1e3a50);
+      border-radius: 12px 12px 8px 8px;
+      box-shadow: 0 6px 18px #00000088, inset 0 1px 4px #ffffff11;
+      margin-top: 0;
+    }
+
+    /* Temperature readout */
+    .readout {
+      margin-top: 2rem;
+      font-size: 0.9rem;
+      color: #7ecfff;
+      letter-spacing: 2px;
+      min-height: 1.4em;
+      opacity: 0.8;
+    }
+
+    /* Controls */
+    .controls {
+      margin-top: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+    }
+
+    .btn-power {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: 3px solid #7ecfff66;
+      background: radial-gradient(circle at 40% 35%, #1e3a50, #0d1e2c);
+      color: #7ecfff;
+      font-size: 1.6rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 0px #7ecfff00, 0 4px 16px #00000066;
+      position: relative;
+      outline: none;
+    }
+    .btn-power:hover {
+      border-color: #7ecfff;
+      box-shadow: 0 0 20px #7ecfff55;
+    }
+    .btn-power.on {
+      border-color: #7ecfff;
+      box-shadow: 0 0 30px #7ecfffaa, 0 0 60px #7ecfff33;
+      color: #fff;
+    }
+
+    /* Power icon */
+    .btn-power svg {
+      display: block;
+      margin: auto;
+    }
+
+    /* Speed buttons */
+    .speed-row {
+      display: flex;
+      gap: 0.8rem;
+    }
+
+    .btn-speed {
+      padding: 0.5rem 1.2rem;
+      border-radius: 8px;
+      border: 2px solid #3a5a7a;
+      background: #0d1e2c;
+      color: #7ecfff;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+    .btn-speed:hover  { border-color: #7ecfff88; }
+    .btn-speed.active {
+      border-color: #7ecfff;
+      background: #1e3a50;
+      box-shadow: 0 0 12px #7ecfff44;
+      color: #fff;
+    }
+
+    /* Oscillation toggle */
+    .btn-osc {
+      padding: 0.5rem 1.4rem;
+      border-radius: 8px;
+      border: 2px solid #3a5a7a;
+      background: #0d1e2c;
+      color: #7ecfff;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+    .btn-osc:hover { border-color: #7ecfff88; }
+    .btn-osc.active {
+      border-color: #7ecfff;
+      background: #1e3a50;
+      box-shadow: 0 0 12px #7ecfff44;
+      color: #fff;
+    }
+
+    /* Oscillation animation on scene */
+    .scene.oscillating {
+      animation: oscillate 3s ease-in-out infinite;
+    }
+    @keyframes oscillate {
+      0%   { transform: rotate(-18deg); }
+      50%  { transform: rotate(18deg); }
+      100% { transform: rotate(-18deg); }
+    }
+
+    .status-bar {
+      display: flex;
+      gap: 2rem;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      color: #4a7a9e;
+      margin-top: 0.4rem;
+    }
+    .status-bar span.lit { color: #7ecfff; }
+  </style>
+</head>
+<body>
+
+  <h1>Ventilator</h1>
+
+  <div class="wind-container" id="windContainer"></div>
+
+  <div class="scene" id="scene">
+    <div class="fan-wrapper">
+      <div class="glow-ring" id="glowRing"></div>
+      <div class="fan-cage">
+        <div class="fan-rotor" id="rotor">
+          <div class="blade"></div>
+          <div class="blade"></div>
+          <div class="blade"></div>
+          <div class="blade"></div>
+          <div class="blade"></div>
+          <div class="hub"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fan-pole"></div>
+    <div class="fan-base"></div>
+  </div>
+
+  <div class="readout" id="readout">— AUSGESCHALTET —</div>
+
+  <div class="controls">
+    <button class="btn-power" id="btnPower" title="Ein / Aus">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+        <path d="M15 3v12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M9.5 6.5A11 11 0 1 0 20.5 6.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      </svg>
+    </button>
+
+    <div class="speed-row">
+      <button class="btn-speed" id="s1" data-speed="slow">STUFE 1</button>
+      <button class="btn-speed" id="s2" data-speed="med">STUFE 2</button>
+      <button class="btn-speed" id="s3" data-speed="fast">STUFE 3</button>
+    </div>
+
+    <button class="btn-osc" id="btnOsc">SCHWENKEN: AUS</button>
+  </div>
+
+  <div class="status-bar">
+    <span id="stPower">POWER: AUS</span>
+    <span id="stSpeed">STUFE: —</span>
+    <span id="stOsc">SCHWENK: AUS</span>
+  </div>
+
+<script>
+  const rotor       = document.getElementById('rotor');
+  const btnPower    = document.getElementById('btnPower');
+  const btnOsc      = document.getElementById('btnOsc');
+  const scene       = document.getElementById('scene');
+  const glowRing    = document.getElementById('glowRing');
+  const readout     = document.getElementById('readout');
+  const windCont    = document.getElementById('windContainer');
+  const stPower     = document.getElementById('stPower');
+  const stSpeed     = document.getElementById('stSpeed');
+  const stOsc       = document.getElementById('stOsc');
+
+  let isOn        = false;
+  let speed       = 'med';      // slow | med | fast
+  let oscillating = false;
+  let windInterval= null;
+
+  const speedLabels = { slow: 'STUFE 1', med: 'STUFE 2', fast: 'STUFE 3' };
+  const readouts = {
+    off:  '— AUSGESCHALTET —',
+    slow: '~ sanfte Brise ~',
+    med:  '~~ angenehme Kühlung ~~',
+    fast: '~~~ volle Kraft voraus ~~~',
+  };
+
+  function setRotor() {
+    rotor.className = 'fan-rotor';
+    if (isOn) rotor.classList.add('spinning-' + speed);
+  }
+
+  function spawnWind() {
+    const p = document.createElement('div');
+    p.className = 'wind-particle';
+    const size = 4 + Math.random() * 10;
+    const top  = 10 + Math.random() * 80;
+    const dur  = 1.2 + Math.random() * 2;
+    const drift = (Math.random() - 0.5) * 60 + 'px';
+    p.style.cssText = `
+      width:${size}px; height:${size}px;
+      top:${top}vh; left:-${size}px;
+      animation-duration:${dur}s;
+      animation-delay:${Math.random() * 0.5}s;
+      --drift:${drift};
+    `;
+    windCont.appendChild(p);
+    setTimeout(() => p.remove(), (dur + 0.5) * 1000);
+  }
+
+  function startWind() {
+    stopWind();
+    const rate = speed === 'fast' ? 80 : speed === 'med' ? 160 : 320;
+    windInterval = setInterval(spawnWind, rate);
+  }
+
+  function stopWind() {
+    clearInterval(windInterval);
+    windInterval = null;
+  }
+
+  function updateUI() {
+    setRotor();
+
+    glowRing.classList.toggle('on', isOn);
+    btnPower.classList.toggle('on', isOn);
+    scene.classList.toggle('oscillating', isOn && oscillating);
+
+    readout.textContent = isOn ? readouts[speed] : readouts.off;
+
+    stPower.textContent = 'POWER: ' + (isOn ? 'AN' : 'AUS');
+    stPower.classList.toggle('lit', isOn);
+
+    stSpeed.textContent = isOn ? 'STUFE: ' + speedLabels[speed] : 'STUFE: —';
+    stSpeed.classList.toggle('lit', isOn);
+
+    stOsc.textContent  = 'SCHWENK: ' + (oscillating ? 'AN' : 'AUS');
+    stOsc.classList.toggle('lit', oscillating && isOn);
+
+    btnOsc.textContent = 'SCHWENKEN: ' + (oscillating ? 'AN' : 'AUS');
+    btnOsc.classList.toggle('active', oscillating && isOn);
+
+    document.querySelectorAll('.btn-speed').forEach(b => {
+      b.classList.toggle('active', isOn && b.dataset.speed === speed);
+    });
+
+    if (isOn) startWind(); else stopWind();
+  }
+
+  btnPower.addEventListener('click', () => {
+    isOn = !isOn;
+    updateUI();
+  });
+
+  document.querySelectorAll('.btn-speed').forEach(b => {
+    b.addEventListener('click', () => {
+      if (!isOn) { isOn = true; }
+      speed = b.dataset.speed;
+      updateUI();
+    });
+  });
+
+  btnOsc.addEventListener('click', () => {
+    oscillating = !oscillating;
+    updateUI();
+  });
+
+  updateUI();
+</script>
+</body>
+</html>
